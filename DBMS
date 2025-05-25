@@ -60,26 +60,28 @@ CREATE TABLE DEPENDENT (
 
 -- Insert minimal data
 
--- Departments
-INSERT INTO Department VALUES ('Research', 5, '123456789', '2020-01-01');
+-- Insert into EMPLOYEE first (Mgr_ssn will reference this)
+INSERT INTO Employee VALUES ('John', 'B', 'Doe', '123456789', '1980-01-01', '123 Houston, Texas', 'M', '40000.00', NULL, '5');
 
--- Employees
-INSERT INTO Employee VALUES ('John', 'B', 'Doe', '123456789', '1980-01-01', '123 Houston, Texas', 'M', 40000.00, NULL, 5);
-INSERT INTO Employee VALUES ('Alice', 'C', 'Smith', '987654321', '1990-02-02', '456 Austin, Texas', 'F', 35000.00, '123456789', 5);
-INSERT INTO Employee VALUES ('Bob', 'D', 'Brown', '111222333', '1985-03-03', '789 Houston, Texas', 'M', 38000.00, '123456789', 5);
+-- Now insert into DEPARTMENT
+INSERT INTO Department VALUES ('Research', '5', '123456789', '2020-01-01');
+
+-- Remaining employees
+INSERT INTO Employee VALUES ('Alice', 'C', 'Smith', '987654321', '1990-02-02', '456 Austin, Texas', 'F', '35000.00', '123456789', '5');
+INSERT INTO Employee VALUES ('Bob', 'D', 'Brown', '111222333', '1985-03-03', '789 Houston, Texas', 'M', '38000.00', '123456789', '5');
 
 -- Dept_location
-INSERT INTO Dept_location VALUES (5, 'Houston');
+INSERT INTO Dept_location VALUES ('5', 'Houston');
 
 -- Projects
-INSERT INTO Project VALUES ('ProjectX', 1, 'Stafford', 5);
-INSERT INTO Project VALUES ('ProjectY', 2, 'Houston', 5);
-INSERT INTO Project VALUES ('ProjectZ', 3, 'Stafford', 5);
+INSERT INTO Project VALUES ('ProjectX', '1', 'Stafford', '5');
+INSERT INTO Project VALUES ('ProjectY', '2', 'Houston', '5');
+INSERT INTO Project VALUES ('ProjectZ', '3', 'Stafford', '5');
 
 -- Works_on
-INSERT INTO Works_on VALUES ('987654321', 1, 10.0);
-INSERT INTO Works_on VALUES ('987654321', 2, 12.5);
-INSERT INTO Works_on VALUES ('111222333', 3, 8.0);
+INSERT INTO Works_on VALUES ('987654321', '1', '10.0');
+INSERT INTO Works_on VALUES ('987654321', '2', '12.5');
+INSERT INTO Works_on VALUES ('111222333', '3', '8.0');
 
 -- Dependents
 INSERT INTO Dependent VALUES ('123456789', 'John', 'M', '2010-10-10', 'Son');
