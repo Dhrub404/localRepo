@@ -1,66 +1,62 @@
--- Department table
-CREATE TABLE Department (
-    Dname VARCHAR(30),
-    Dnumber INT PRIMARY KEY,
-    mgr_ssn INT,
-    mgr_start_date DATE,
-    FOREIGN KEY (mgr_ssn) REFERENCES Employee(ssn)
+-- ========== SCHEMA DEFINITION ==========
+
+CREATE TABLE EMPLOYEE (
+  Fname           VARCHAR(10),
+  Minit           CHAR(1),
+  Lname           VARCHAR(20),
+  Ssn             CHAR(9),
+  Bdate           DATE,
+  Address         VARCHAR(30),
+  Sex             CHAR(1),
+  Salary          DECIMAL(10,2),
+  Super_ssn       CHAR(9),
+  Dno             INT,
+  PRIMARY KEY (Ssn)
 );
 
--- Employee table
-CREATE TABLE Employee (
-    Fname VARCHAR(20),
-    Minit CHAR(1),
-    Lname VARCHAR(20),
-    ssn INT PRIMARY KEY,
-    Bdate DATE,
-    Address VARCHAR(100),
-    Sex CHAR(1),
-    Salary DECIMAL(10,2),
-    Super_ssn INT,
-    DNO INT,
-    FOREIGN KEY (Super_ssn) REFERENCES Employee(ssn),
-    FOREIGN KEY (DNO) REFERENCES Department(Dnumber)
+CREATE TABLE DEPARTMENT (
+  Dname           VARCHAR(15) UNIQUE,
+  Dnumber         INT PRIMARY KEY,
+  Mgr_ssn         CHAR(9),
+  Mgr_start_date  DATE,
+  FOREIGN KEY (Mgr_ssn) REFERENCES EMPLOYEE(Ssn)
 );
 
--- Dept_location table
-CREATE TABLE Dept_location (
-    Dnumber INT,
-    Dlocation VARCHAR(50),
-    FOREIGN KEY (Dnumber) REFERENCES Department(Dnumber)
+CREATE TABLE DEPT_LOCATIONS (
+  Dnumber     INT,
+  Dlocation   VARCHAR(15),
+  PRIMARY KEY (Dnumber, Dlocation),
+  FOREIGN KEY (Dnumber) REFERENCES DEPARTMENT(Dnumber)
 );
 
--- Project table
-CREATE TABLE Project (
-    pname VARCHAR(30),
-    pnumber INT PRIMARY KEY,
-    plocation VARCHAR(50),
-    dnum INT,
-    FOREIGN KEY (dnum) REFERENCES Department(Dnumber)
+CREATE TABLE PROJECT (
+  Pname       VARCHAR(25) NOT NULL UNIQUE,
+  Pnumber     INT NOT NULL PRIMARY KEY,
+  Plocation   VARCHAR(15),
+  Dnum        INT NOT NULL,
+  FOREIGN KEY (Dnum) REFERENCES DEPARTMENT(Dnumber)
 );
 
--- Works_on table
-CREATE TABLE Works_on (
-    Essn INT,
-    pno INT,
-    hours DECIMAL(5,2),
-    FOREIGN KEY (Essn) REFERENCES Employee(ssn),
-    FOREIGN KEY (pno) REFERENCES Project(pnumber)
+CREATE TABLE WORKS_ON (
+  Essn    CHAR(9),
+  Pno     INT,
+  Hours   DECIMAL(3,1),
+  PRIMARY KEY (Essn, Pno),
+  FOREIGN KEY (Essn) REFERENCES EMPLOYEE(Ssn),
+  FOREIGN KEY (Pno) REFERENCES PROJECT(Pnumber)
 );
 
--- Dependent table
-CREATE TABLE Dependent (
-    Essn INT,
-    dependent_name VARCHAR(30),
-    Sex CHAR(1),
-    Bdate DATE,
-    relationship VARCHAR(20),
-    FOREIGN KEY (Essn) REFERENCES Employee(ssn)
+CREATE TABLE DEPENDENT (
+  Essn            CHAR(9),
+  Dependent_name  VARCHAR(15),
+  Sex             CHAR(1),
+  Bdate           DATE,
+  Relationship    VARCHAR(8),
+  PRIMARY KEY (Essn, Dependent_name),
+  FOREIGN KEY (Essn) REFERENCES EMPLOYEE(Ssn)
 );
 
-
-
-
+-- ========== DATA INSERTION ==========
 
 -- Insert minimal data
 
@@ -91,67 +87,78 @@ INSERT INTO Dependent VALUES ('987654321', 'Alice', 'F', '2012-08-08', 'Daughter
 
 
 
+-- ========== QUERIES ==========
 
+-- 1. Name and address of all employees who work for the ‘Research’ department
+SELECT Fname, Minit, Lname, Address  
+FROM EMPLOYEE e, DEPARTMENT d 
+WHERE e.Dno = d.Dnumber 
+AND d.Dname = 'Research';
 
+-- 2. Project number, controlling dept number, and manager’s details for projects in ‘Stafford’
+SELECT e.Lname, e.Bdate, e.Address, p.pnumber, p.dnum 
+FROM EMPLOYEE e, PROJECT p, DEPARTMENT d  
+WHERE p.plocation = 'Stafford' 
+AND p.dnum = d.Dnumber 
+AND d.Mgr_ssn = e.Ssn;
 
+-- 3. Employees and their immediate supervisors
+SELECT e1.Fname, e1.Lname, e2.Fname AS Manager_Fname, e2.Lname AS Manager_Lname 
+FROM EMPLOYEE e1, EMPLOYEE e2  
+WHERE e2.Ssn = e1.Super_ssn;
 
-
--- 1. Retrieve the name and address of all employees who work for the ‘Research’ department.
-SELECT E.Fname, E.Lname, E.Address
-FROM Employee E, Department D
-WHERE E.DNO = D.Dnumber AND D.Dname = 'Research';
-
--- 2. For every project located in ‘Stafford’
-SELECT P.pnumber, P.dnum, E.Lname, E.Address, E.Bdate
-FROM Project P, Department D, Employee E
-WHERE P.plocation = 'Stafford' AND P.dnum = D.Dnumber AND D.mgr_ssn = E.ssn;
-
--- 3. For each employee, retrieve their name and supervisor's name
-SELECT E.Fname, E.Lname, S.Fname AS Supervisor_Fname, S.Lname AS Supervisor_Lname
-FROM Employee E LEFT JOIN Employee S ON E.Super_ssn = S.ssn;
-
--- 4. Projects involving employees with last name ‘Smith’
-SELECT DISTINCT W.pno
-FROM Employee E, Works_on W
-WHERE E.Lname = 'Smith' AND E.ssn = W.Essn;
+-- 4. Project numbers involving an employee named ‘Smith’
+(SELECT DISTINCT pnumber FROM PROJECT, DEPARTMENT, EMPLOYEE 
+ WHERE Dnum = Dnumber AND Mgr_ssn = Ssn AND Lname = 'Smith') 
+UNION 
+(SELECT DISTINCT pnumber FROM PROJECT, WORKS_ON, EMPLOYEE 
+ WHERE pnumber = Pno AND Essn = Ssn AND Lname = 'Smith');
 
 -- 5. Employees whose address is in Houston, Texas
-SELECT Fname, Lname FROM Employee WHERE Address LIKE '%Houston%';
+SELECT Fname, Minit, Lname  
+FROM EMPLOYEE  
+WHERE Address LIKE '%Houston%TX%';
 
--- 6. Employees in department 5 with salary between $30,000 and $40,000
-SELECT Fname, Lname FROM Employee WHERE DNO = 5 AND Salary BETWEEN 30000 AND 40000;
+-- 6. Employees in department 5 with salaries between $30,000 and $40,000
+SELECT * 
+FROM EMPLOYEE e, DEPARTMENT d  
+WHERE e.Dno = d.Dnumber 
+AND d.Dnumber = 5 
+AND e.Salary BETWEEN 30000 AND 40000;
 
 -- 7. Employees without supervisors
-SELECT Fname, Lname FROM Employee WHERE Super_ssn IS NULL;
+SELECT Fname, Minit, Lname  
+FROM EMPLOYEE e  
+WHERE NOT EXISTS (SELECT * FROM EMPLOYEE s WHERE e.Super_ssn = s.Ssn);
 
--- 8. Employees with a dependent having same first name and gender
-SELECT E.Fname, E.Lname
-FROM Employee E, Dependent D
-WHERE E.ssn = D.Essn AND E.Fname = D.dependent_name AND E.Sex = D.Sex;
+-- 8. Employees with dependents of same first name and gender
+SELECT Fname, Minit, Lname  
+FROM EMPLOYEE e, DEPENDENT d  
+WHERE e.Fname = d.Dependent_name 
+AND e.Sex = d.Sex;
 
 -- 9. Employees with no dependents
-SELECT Fname, Lname
-FROM Employee
-WHERE ssn NOT IN (SELECT Essn FROM Dependent);
+SELECT Fname, Minit, Lname  
+FROM EMPLOYEE  
+WHERE NOT EXISTS (SELECT * FROM DEPENDENT WHERE Ssn = Essn);
 
--- 10. Managers with at least one dependent
-SELECT DISTINCT E.Fname, E.Lname
-FROM Employee E, Department D, Dependent Dp
-WHERE E.ssn = D.mgr_ssn AND E.ssn = Dp.Essn;
+-- 10. Managers who have at least one dependent
+SELECT Fname, Minit, Lname  
+FROM EMPLOYEE  
+WHERE EXISTS (SELECT * FROM DEPARTMENT WHERE Ssn = Mgr_ssn AND Dno = Dnumber) 
+AND EXISTS (SELECT * FROM DEPENDENT WHERE Ssn = Essn);
 
--- 11. SSNs of employees working on project 1, 2, or 3
-SELECT Essn FROM Works_on WHERE pno IN (1, 2, 3);
+-- 11. SSNs of employees who work on project numbers 1, 2, or 3
+SELECT DISTINCT Essn  
+FROM WORKS_ON  
+WHERE Pno IN (1, 2, 3);
 
--- 12. Total salary of employees in ‘Research’ department
-SELECT SUM(Salary)
-FROM Employee E, Department D
-WHERE E.DNO = D.Dnumber AND D.Dname = 'Research';
+-- 12. Salary statistics for ‘Research’ department
+SELECT SUM(Salary) AS Total_Salary, MAX(Salary) AS Max_Salary, MIN(Salary) AS Min_Salary, AVG(Salary) AS Avg_Salary  
+FROM EMPLOYEE, DEPARTMENT  
+WHERE Dno = Dnumber AND Dname = 'Research';
 
--- 13. Department stats
-SELECT D.Dname, COUNT(E.ssn) AS Num_Employees,
-       MAX(E.Salary) AS Max_Salary,
-       MIN(E.Salary) AS Min_Salary,
-       AVG(E.Salary) AS Avg_Salary
-FROM Employee E, Department D
-WHERE E.DNO = D.Dnumber
-GROUP BY D.Dname;
+-- 13. Department number, employee count, and average salary for each department
+SELECT Dno, COUNT(*) AS Employee_Count, AVG(Salary) AS Avg_Salary  
+FROM EMPLOYEE  
+GROUP BY Dno;
