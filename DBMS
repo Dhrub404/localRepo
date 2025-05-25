@@ -57,3 +57,101 @@ CREATE TABLE Dependent (
     relationship VARCHAR(20),
     FOREIGN KEY (Essn) REFERENCES Employee(ssn)
 );
+
+
+
+
+
+-- Insert minimal data
+
+-- Departments
+INSERT INTO Department VALUES ('Research', 5, '123456789', '2020-01-01');
+
+-- Employees
+INSERT INTO Employee VALUES ('John', 'B', 'Doe', '123456789', '1980-01-01', '123 Houston, Texas', 'M', 40000.00, NULL, 5);
+INSERT INTO Employee VALUES ('Alice', 'C', 'Smith', '987654321', '1990-02-02', '456 Austin, Texas', 'F', 35000.00, '123456789', 5);
+INSERT INTO Employee VALUES ('Bob', 'D', 'Brown', '111222333', '1985-03-03', '789 Houston, Texas', 'M', 38000.00, '123456789', 5);
+
+-- Dept_location
+INSERT INTO Dept_location VALUES (5, 'Houston');
+
+-- Projects
+INSERT INTO Project VALUES ('ProjectX', 1, 'Stafford', 5);
+INSERT INTO Project VALUES ('ProjectY', 2, 'Houston', 5);
+INSERT INTO Project VALUES ('ProjectZ', 3, 'Stafford', 5);
+
+-- Works_on
+INSERT INTO Works_on VALUES ('987654321', 1, 10.0);
+INSERT INTO Works_on VALUES ('987654321', 2, 12.5);
+INSERT INTO Works_on VALUES ('111222333', 3, 8.0);
+
+-- Dependents
+INSERT INTO Dependent VALUES ('123456789', 'John', 'M', '2010-10-10', 'Son');
+INSERT INTO Dependent VALUES ('987654321', 'Alice', 'F', '2012-08-08', 'Daughter');
+
+
+
+
+
+
+
+
+-- 1. Retrieve the name and address of all employees who work for the ‘Research’ department.
+SELECT E.Fname, E.Lname, E.Address
+FROM Employee E, Department D
+WHERE E.DNO = D.Dnumber AND D.Dname = 'Research';
+
+-- 2. For every project located in ‘Stafford’
+SELECT P.pnumber, P.dnum, E.Lname, E.Address, E.Bdate
+FROM Project P, Department D, Employee E
+WHERE P.plocation = 'Stafford' AND P.dnum = D.Dnumber AND D.mgr_ssn = E.ssn;
+
+-- 3. For each employee, retrieve their name and supervisor's name
+SELECT E.Fname, E.Lname, S.Fname AS Supervisor_Fname, S.Lname AS Supervisor_Lname
+FROM Employee E LEFT JOIN Employee S ON E.Super_ssn = S.ssn;
+
+-- 4. Projects involving employees with last name ‘Smith’
+SELECT DISTINCT W.pno
+FROM Employee E, Works_on W
+WHERE E.Lname = 'Smith' AND E.ssn = W.Essn;
+
+-- 5. Employees whose address is in Houston, Texas
+SELECT Fname, Lname FROM Employee WHERE Address LIKE '%Houston%';
+
+-- 6. Employees in department 5 with salary between $30,000 and $40,000
+SELECT Fname, Lname FROM Employee WHERE DNO = 5 AND Salary BETWEEN 30000 AND 40000;
+
+-- 7. Employees without supervisors
+SELECT Fname, Lname FROM Employee WHERE Super_ssn IS NULL;
+
+-- 8. Employees with a dependent having same first name and gender
+SELECT E.Fname, E.Lname
+FROM Employee E, Dependent D
+WHERE E.ssn = D.Essn AND E.Fname = D.dependent_name AND E.Sex = D.Sex;
+
+-- 9. Employees with no dependents
+SELECT Fname, Lname
+FROM Employee
+WHERE ssn NOT IN (SELECT Essn FROM Dependent);
+
+-- 10. Managers with at least one dependent
+SELECT DISTINCT E.Fname, E.Lname
+FROM Employee E, Department D, Dependent Dp
+WHERE E.ssn = D.mgr_ssn AND E.ssn = Dp.Essn;
+
+-- 11. SSNs of employees working on project 1, 2, or 3
+SELECT Essn FROM Works_on WHERE pno IN (1, 2, 3);
+
+-- 12. Total salary of employees in ‘Research’ department
+SELECT SUM(Salary)
+FROM Employee E, Department D
+WHERE E.DNO = D.Dnumber AND D.Dname = 'Research';
+
+-- 13. Department stats
+SELECT D.Dname, COUNT(E.ssn) AS Num_Employees,
+       MAX(E.Salary) AS Max_Salary,
+       MIN(E.Salary) AS Min_Salary,
+       AVG(E.Salary) AS Avg_Salary
+FROM Employee E, Department D
+WHERE E.DNO = D.Dnumber
+GROUP BY D.Dname;
