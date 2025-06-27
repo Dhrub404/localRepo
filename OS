@@ -31,32 +31,38 @@ void main()
 
 
 2
-#include <stdio.h>
 #include <windows.h>
+#include <stdio.h>
 
-int main()
+int main(void)
 {
-    STARTUPINFO si;
-    PROCESS_INFORMATION pi;
-
-    ZeroMemory(&si, sizeof(si));
+    STARTUPINFO          si = {0};
+    PROCESS_INFORMATION  pi = {0};
     si.cb = sizeof(si);
-    ZeroMemory(&pi, sizeof(pi));
 
-    if(!CreateProcess("C:\\Windows\\System32\\cmd.exe", NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi))
+    /* 1. launch cmd.exe */
+    if (!CreateProcessA(
+            "C:\\Windows\\System32\\cmd.exe", /* lpApplicationName          */
+            NULL,                             /* lpCommandLine (unused)     */
+            NULL, NULL, FALSE,                /* security / inheritance     */
+            CREATE_NEW_CONSOLE,               /* get a new console window   */
+            NULL, NULL,                       /* environment / current dir  */
+            &si, &pi))
     {
-        printf("Sorry! CreateProcess() failed\n");
-        return -1;
-    }
-    else
-    {
-        printf("Well CreateProcess() looks OK\n");
-        printf("exit after 5000ms\n");
+        printf("CreateProcess failed (err=%lu)\n", GetLastError());
+        return 1;
     }
 
-    WaitForSingleObject(pi.hProcess, 5000);
-    CloseHandle(pi.hProcess);
+    printf("Child PID=%lu  (close in 5 s)\n", pi.dwProcessId);
+
+    /* 2. wait 5 s for the child */
+    DWORD rv = WaitForSingleObject(pi.hProcess, 5000);
+    if (rv == WAIT_TIMEOUT)
+        printf("Still running after 5 s… parent will now exit.\n");
+
+    /* 3. clean up kernel handles */
     CloseHandle(pi.hThread);
+    CloseHandle(pi.hProcess);
     return 0;
 }
 
